@@ -89,3 +89,4 @@ resource "aws_ecr_repository" "productlookup_ecr" {
 #     period = "MONTH"
 #   }
 # }
+
