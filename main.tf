@@ -5,3 +5,9 @@ resource "aws_budgets_budget" "main_budget" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 }
+
+# vibenance module
+module "vibenance" {
+  source     = "./repos/vibenance"
+  aws_region = var.aws_region
+}

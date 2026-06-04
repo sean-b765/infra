@@ -6,58 +6,67 @@ locals {
 
 resource "aws_s3_bucket" "this" {
   bucket = var.s3_name
-  region = var.aws_region
 }
 
-resource "aws_s3_bucket_acl" "this" {
-  bucket = aws_s3_bucket.this.bucket
-  acl    = "private"
-}
+data "aws_iam_policy_document" "origin_bucket_policy" {
+  statement {
+    sid    = "AllowCloudFrontServiceReadWrite"
+    effect = "Allow"
 
-resource "aws_s3_bucket_website_configuration" "this" {
-  bucket = aws_s3_bucket.this.bucket
-  index_document {
-    suffix = "index.html"
-  }
-  error_document {
-    key = "index.html"
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.this.arn}/*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.this.arn]
+    }
   }
 }
 
 resource "aws_s3_bucket_policy" "this" {
-  bucket = aws_s3_bucket.this
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Id      = "AllowGetAll"
-    Statement = [
-      {
-        Sid       = "AllowPublic"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.this.arn}/**"
-      }
-    ]
-  })
+  bucket = aws_s3_bucket.this.bucket
+  policy = data.aws_iam_policy_document.origin_bucket_policy.json
+}
+
+# data data "aws_acm_certificate" "this" {
+#   domain = "tf.example.com"
+#   statuses = ["ISSUED]"]
+# }
+
+resource "aws_cloudfront_origin_access_control" "this" {
+  name                              = "default-oac"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_cloudfront_distribution" "this" {
-  enabled = true
   origin {
-    origin_id   = local.s3_origin_id
-    domain_name = local.s3_domain_name
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1"]
-    }
+    domain_name              = aws_s3_bucket.this.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.this.id
+    origin_id                = local.s3_origin_id
   }
-  default_cache_behavior {
 
-    target_origin_id = local.s3_origin_id
-    allowed_methods  = ["GET", "HEAD"]
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.s3_origin_id
 
     forwarded_values {
       query_string = true
@@ -69,9 +78,10 @@ resource "aws_cloudfront_distribution" "this" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
   }
+  price_class = "PriceClass_200"
 
   restrictions {
     geo_restriction {
@@ -81,7 +91,7 @@ resource "aws_cloudfront_distribution" "this" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
+    # acm_certificate_arn = data.aws_acm_certificate.my_domain.arn
+    # ssl_support_method  = "sni-only"
   }
-
-  price_class = "PriceClass_200"
 }

@@ -9,10 +9,11 @@ terraform {
   required_version = ">= 1.2"
 
   backend "s3" {
-    bucket         = "seanboaden-dev-tfstate"
-    key            = "terraform.tfstate"
-    region         = "ap-southeast-2"
-    dynamodb_table = "seanboaden-dev-tfstate-lock"
-    encrypt        = true
+    bucket       = "seanboaden-dev-tfstate"
+    key          = "terraform.tfstate"
+    region       = "ap-southeast-2"
+    profile      = "default"
+    use_lockfile = true
+    encrypt      = true
   }
 }

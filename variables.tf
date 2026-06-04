@@ -4,3 +4,8 @@ variable "aws_region" {
   default     = "ap-southeast-2"
 }
 
+variable "aws_profile" {
+  description = "AWS CLI profile"
+  type        = string
+  default     = "default"
+}
