@@ -12,3 +12,7 @@ variable "gh_repo" {
   description = "GitHub repo, like 'org_name/repo_name'"
   type        = string
 }
+variable "viewer_certificate_arn" {
+  description = "CloudFront distribution viewer certificate"
+  type        = string
+}

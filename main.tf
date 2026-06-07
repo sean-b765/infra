@@ -6,9 +6,18 @@ resource "aws_budgets_budget" "main_budget" {
   time_unit    = "MONTHLY"
 }
 
+# Certificate
+
+data "aws_acm_certificate" "public" {
+  domain   = "seanboaden.dev"
+  statuses = ["ISSUED"]
+  provider = aws.us_east_1
+}
+
 # vibenance module
 module "vibenance" {
-  source     = "./repos/vibenance"
-  aws_region = var.aws_region
-  gh_repo    = "sean-b765/vibenance"
+  source                 = "./repos/vibenance"
+  aws_region             = var.aws_region
+  gh_repo                = "sean-b765/vibenance"
+  viewer_certificate_arn = data.aws_acm_certificate.public.arn
 }

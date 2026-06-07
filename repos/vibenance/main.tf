@@ -39,11 +39,6 @@ resource "aws_s3_bucket_policy" "this" {
   policy = data.aws_iam_policy_document.origin_bucket_policy.json
 }
 
-# data data "aws_acm_certificate" "this" {
-#   domain = "tf.example.com"
-#   statuses = ["ISSUED]"]
-# }
-
 resource "aws_cloudfront_origin_access_control" "this" {
   name                              = "default-oac"
   origin_access_control_origin_type = "s3"
@@ -58,6 +53,8 @@ resource "aws_cloudfront_distribution" "this" {
     origin_id                = local.s3_origin_id
   }
 
+  aliases = ["pfm.seanboaden.dev"]
+
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -71,7 +68,7 @@ resource "aws_cloudfront_distribution" "this" {
       query_string = true
 
       cookies {
-        forward = "all"
+        forward = "none"
       }
     }
 
@@ -89,9 +86,8 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
-    # acm_certificate_arn = data.aws_acm_certificate.my_domain.arn
-    # ssl_support_method  = "sni-only"
+    acm_certificate_arn = var.viewer_certificate_arn
+    ssl_support_method  = "sni-only"
   }
 
   custom_error_response {
