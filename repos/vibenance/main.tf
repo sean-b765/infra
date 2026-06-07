@@ -64,13 +64,8 @@ resource "aws_cloudfront_distribution" "this" {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
 
-    # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-caching-optimized
-    cache_policy_id = data.aws_cloudfront_cache_policy.caching_optimized.id
-
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 300
   }
 
   ordered_cache_behavior {
@@ -80,12 +75,9 @@ resource "aws_cloudfront_distribution" "this" {
     allowed_methods = ["GET", "OPTIONS"]
     cached_methods  = ["GET", "OPTIONS"]
 
-    cache_policy_id = data.aws_cloudfront_cache_policy.caching_optimized.id
+    cache_policy_id = aws_cloudfront_cache_policy.assets.id
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 31536000
-    default_ttl            = 31536000
-    max_ttl                = 31536000
     compress               = true
   }
 
@@ -107,6 +99,34 @@ resource "aws_cloudfront_distribution" "this" {
     error_code            = 403
     response_code         = 200
     error_caching_min_ttl = 10
+  }
+}
+
+# Managed cache (https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-caching-disabled)
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+}
+
+# Custom cache policy
+resource "aws_cloudfront_cache_policy" "assets" {
+  name = "assets-cache"
+
+  min_ttl     = 31536000
+  default_ttl = 31536000
+  max_ttl     = 31536000
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
   }
 }
 
