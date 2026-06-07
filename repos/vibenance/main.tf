@@ -72,8 +72,21 @@ resource "aws_cloudfront_distribution" "this" {
     path_pattern     = "/assets/*"
     target_origin_id = local.s3_origin_id
 
-    allowed_methods = ["GET", "OPTIONS"]
-    cached_methods  = ["GET", "OPTIONS"]
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD", "OPTIONS"]
+
+    cache_policy_id = aws_cloudfront_cache_policy.assets.id
+
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+  }
+
+  ordered_cache_behavior {
+    path_pattern     = "favicon.ico"
+    target_origin_id = local.s3_origin_id
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD", "OPTIONS"]
 
     cache_policy_id = aws_cloudfront_cache_policy.assets.id
 
