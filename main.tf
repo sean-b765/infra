@@ -10,4 +10,5 @@ resource "aws_budgets_budget" "main_budget" {
 module "vibenance" {
   source     = "./repos/vibenance"
   aws_region = var.aws_region
+  gh_repo    = "sean-b765/vibenance"
 }

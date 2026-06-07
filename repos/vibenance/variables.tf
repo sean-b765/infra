@@ -8,3 +8,7 @@ variable "aws_region" {
   type        = string
   default     = "ap-southeast-2"
 }
+variable "gh_repo" {
+  description = "GitHub repo, like 'org_name/repo_name'"
+  type        = string
+}

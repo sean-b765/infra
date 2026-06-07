@@ -10,7 +10,7 @@ resource "aws_s3_bucket" "this" {
 
 data "aws_iam_policy_document" "origin_bucket_policy" {
   statement {
-    sid    = "AllowCloudFrontServiceReadWrite"
+    sid    = "AllowCloudFrontServiceRead"
     effect = "Allow"
 
     principals {
@@ -19,8 +19,7 @@ data "aws_iam_policy_document" "origin_bucket_policy" {
     }
 
     actions = [
-      "s3:GetObject",
-      "s3:PutObject"
+      "s3:GetObject"
     ]
 
     resources = [
@@ -94,4 +93,69 @@ resource "aws_cloudfront_distribution" "this" {
     # acm_certificate_arn = data.aws_acm_certificate.my_domain.arn
     # ssl_support_method  = "sni-only"
   }
+
+  custom_error_response {
+    response_page_path    = "/index.html"
+    error_code            = 403
+    response_code         = 200
+    error_caching_min_ttl = 10
+  }
 }
+
+# IAM permissions for CI/CD
+
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    sid     = "GithubOidcAssumeRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.gh_repo}:environment:production"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions_role" {
+  name               = "vibenance-actions-deploy-role"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
+}
+
+data "aws_iam_policy_document" "deployment_policy" {
+  statement {
+    sid       = "AllowS3RecursiveCopy"
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+    effect    = "Allow"
+    resources = ["${aws_s3_bucket.this.arn}/*", "${aws_s3_bucket.this.arn}"]
+  }
+  statement {
+    sid       = "AllowCloudFrontInvalidation"
+    actions   = ["cloudfront:CreateInvalidation"]
+    effect    = "Allow"
+    resources = ["${aws_cloudfront_distribution.this.arn}"]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_deployment_policy" {
+  name   = "deployment-permissions-s3-cloudfront"
+  role   = aws_iam_role.github_actions_role.name
+  policy = data.aws_iam_policy_document.deployment_policy.json
+}
+
