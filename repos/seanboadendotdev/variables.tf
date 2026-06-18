@@ -1,0 +1,23 @@
+variable "s3_name" {
+  description = "Name of S3 bucket"
+  type        = string
+  default     = "seanboadendotdev"
+}
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-southeast-2"
+}
+variable "gh_repo" {
+  description = "GitHub repo, like 'org_name/repo_name'"
+  type        = string
+}
+variable "viewer_certificate_arn" {
+  description = "CloudFront distribution viewer certificate"
+  type        = string
+}
+
+variable "project_name" {
+  description = "Your project name"
+  type        = string
+}
