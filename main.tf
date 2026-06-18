@@ -21,3 +21,11 @@ module "vibenance" {
   gh_repo                = "sean-b765/vibenance"
   viewer_certificate_arn = data.aws_acm_certificate.public.arn
 }
+
+module "seanboadendotdev" {
+  source                 = "./repos/seanboadendotdev"
+  project_name           = "seanboadendotdev"
+  aws_region             = var.aws_region
+  gh_repo                = "sean-b765/seanboadendotdev"
+  viewer_certificate_arn = data.aws_acm_certificate.public.arn
+}
