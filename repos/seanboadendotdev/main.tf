@@ -46,6 +46,41 @@ resource "aws_cloudfront_origin_access_control" "this" {
   signing_protocol                  = "sigv4"
 }
 
+# Security header policy
+
+resource "aws_cloudfront_response_headers_policy" "this" {
+  name    = "security-headers-policy"
+  comment = "Standard security headers for static site"
+
+  security_headers_config {
+    strict_transport_security {
+      override                   = true
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      preload                    = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      override     = true
+      frame_option = "DENY"
+    }
+
+    referrer_policy {
+      override        = true
+      referrer_policy = "strict-origin-when-cross-origin"
+    }
+
+    content_security_policy {
+      override                = true
+      content_security_policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "this" {
   aliases = ["seanboaden.dev"]
 
@@ -66,6 +101,8 @@ resource "aws_cloudfront_distribution" "this" {
 
     cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
     viewer_protocol_policy = "redirect-to-https"
+
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.this.id
   }
 
   ordered_cache_behavior {
@@ -79,6 +116,8 @@ resource "aws_cloudfront_distribution" "this" {
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.this.id
   }
 
   ordered_cache_behavior {
@@ -92,6 +131,8 @@ resource "aws_cloudfront_distribution" "this" {
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.this.id
   }
 
   ordered_cache_behavior {
@@ -105,6 +146,8 @@ resource "aws_cloudfront_distribution" "this" {
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.this.id
   }
 
   price_class = "PriceClass_200"
